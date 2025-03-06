@@ -1,0 +1,36 @@
+import numpy as np
+import pandas as pd
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Dropout
+from sklearn.preprocessing import MinMaxScaler
+import matplotlib.pyplot as plt
+# Load dataset
+df = pd.read_csv('disease_outbreak_data.csv')
+# Data preprocessing
+scaler = MinMaxScaler(feature_range=(0,1))
+data_scaled = scaler.fit_transform(df[['cases']])
+# Prepare training data
+x_train, y_train = [], []
+for i in range(60, len(data_scaled)):
+x_train.append(data_scaled[i-60:i, 0])
+y_train.append(data_scaled[i, 0])
+x_train, y_train = np.array(x_train), np.array(y_train)
+x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
+# Build LSTM model
+model = Sequential([
+LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1],
+1)),
+Dropout(0.2),
+LSTM(units=50, return_sequences=False),
+Dropout(0.2),
+Dense(units=1)
+])
+model.compile(optimizer='adam', loss='mean_squared_error')
+model.fit(x_train, y_train, epochs=20, batch_size=32)
+# Plot training loss
+plt.plot(model.history.history['loss'])
+plt.title('Model Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.show(
